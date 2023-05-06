@@ -1,0 +1,113 @@
+version: 2
+
+models:
+  - name: stg_globepay__acceptance
+    tests:
+      - unique:
+          column_name: external_ref
+
+    columns:
+      - name: external_ref  
+
+      - name: status
+
+      - name: source
+        tests:
+          - accepted_values:
+              values: ['GLOBALPAY']
+
+      - name: ref
+
+      - name: date_time
+        description: The timestamp of the transaction.
+
+      - name: state
+        description: The binary state of the transaction.
+        tests:
+          - accepted_values:
+              values: ['ACCEPTED', 'DECLINED']
+
+      - name: cvv_provided
+
+      - name: amount
+        description: The amount that has been charged from the card.
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+
+      - name: country
+        description: The two-character ISO country code of the card.
+
+      - name: currency
+        description: The three-character ISO currency code.
+
+      - name: rates
+        description: The exchange rate used. Funds are settled to you in USD.
+
+      - name: usd_amount
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+
+
+  - name: stg_globepay__chargeback
+    tests:
+      - unique:
+          column_name: external_ref
+
+    columns:
+      - name: external_ref
+        tests:
+          - relationships:
+              to: ref('stg_globepay__acceptance')
+              field: external_ref
+
+      - name: status
+
+      - name: source
+        tests:
+          - accepted_values:
+              values: ['GLOBALPAY']
+
+      - name: chargeback
+        description: If the transaction has been chargedback.
+
+
+
+
+metrics:
+  - name: accepted_payments_count
+    label: The number of accepted payments
+    model: ref('payments')
+    calculation_method: count
+    filters:
+     - field: is_accepted
+       operator: 'is'
+       value: 'true'
+    expression: ref
+    timestamp: date_time
+    time_grains: [day, month, quarter, year]
+    dimensions:
+      - country
+
+  - name: total_payments_count
+    label: The total number of payments
+    model: ref('payments')
+    calculation_method: count
+    expression: ref
+    timestamp: date_time
+    time_grains: [day, month, quarter, year]
+    dimensions:
+      - country
+
+  - name: acceptance_rate
+    label: Acceptance rate
+    calculation_method: derived
+    expression: "{{metric('accepted_payments_count')}} / {{metric('total_payments_count')}}"
+    timestamp: date_time
+    time_grains: [day, month, quarter, year]
+    dimensions:
+      - country 
