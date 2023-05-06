@@ -1,11 +1,4 @@
-Welcome to your new dbt project!
-
-### Using the starter project
-
-Try running the following commands:
-- dbt run
-- dbt test
-
+![Lineage graphs](https://i.ibb.co/km2qDfB/dbt-dag.png)
 
 ### Resources:
 - Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
